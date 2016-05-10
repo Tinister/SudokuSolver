@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>2a819d47-cd38-45bf-a9eb-0d242bdd40eb</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>MainFrame.py</StartupFile>
+    <StartupFile>gui.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -28,7 +28,10 @@
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\3.5" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MainFrame.py">
+    <Compile Include="boxframe.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="gui.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
