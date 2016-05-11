@@ -1,12 +1,19 @@
-import collections
 from tkinter import Tk, Text, StringVar
 from tkinter.ttk import Style, Frame, Label, Button
-from boxframe import BoxFrame
+from boxframes import SubGridFrame, BoxFrame, _build_grids
 
 class MainFrame(Frame):
     def __init__(self, master):
         Frame.__init__(self, master)
-        Style().configure('box.TFrame', background='white', relief='solid', borderwidth=1)
+        Style().theme_use('default')
+        Style().configure('grid.TFrame', background='#888')
+        Style().configure('subgrid.TFrame', background='#888')
+        Style().configure('box.TFrame', background='white')
+        Style().configure('green.TFrame', background='green')
+        Style().configure('red.TFrame', background='red')
+        Style().configure('number.TLabel', background='white', font='Helvetica 24')
+        Style().configure('pencil.TLabel', background='white', font='Helvetica 8')
+        self.boxes = {}
         self._init_ui()
     
     def _init_ui(self):
@@ -26,48 +33,16 @@ class MainFrame(Frame):
         step_button.pack(side='right')
         self.end_button = end_button
 
-        grid_frame = Frame(self)
-        self._build_grids(grid_frame, (0, 0),
-            [self._build_grid_args(Frame, {'padx': 3, 'pady': 3}, lambda frm, pos, mwin: None),
-             self._build_grid_args(BoxFrame, { }, BoxFrame.set_position)])
+        grid_frame = Frame(self, style='grid.TFrame')
+        _build_grids(grid_frame, (0, 0), [SubGridFrame, BoxFrame], self)
         grid_frame.pack(fill='both', padx=5, expand=True)
 
         status_bar = Label(self, textvariable=self.status_text)
         status_bar.pack(fill='x', padx=5, pady=5)
 
-    _build_grid_args = collections.namedtuple('_build_grid_args', ['type', 'pack_args', 'set_position_func'])
-
-    def _build_grids(self, parent_frame, parent_position, arg_list):
-        if len(arg_list) <= 0:
-            return
-        frame_type = arg_list[0].type
-        parent_frame.rowconfigure((0, 1, 2), weight=1)
-        parent_frame.columnconfigure((0, 1, 2), weight=1)
-
-        for row in (0, 1, 2):
-            for col in (0, 1, 2):
-                position = (parent_position[0] * 3 + row, parent_position[0] * 3 + col)
-
-                pack_args = arg_list[0].pack_args.copy()
-                self._fixup_grid_args(row, col, pack_args)
-
-                subframe = frame_type(parent_frame)
-                subframe.grid(**pack_args)
-
-                arg_list[0].set_position_func(subframe, position, self)
-                self._build_grids(subframe, position, arg_list[1:])
-
-    def _fixup_grid_args(self, row, col, kwargs):
-        kwargs['row'] = row
-        kwargs['column'] = col
-        kwargs['sticky'] = 'nesw'
-        if 'padx' in kwargs:
-            kwargs['padx'] = (0, kwargs['padx']) if col < 2 else 0
-        if 'pady' in kwargs:
-            kwargs['pady'] = (0, kwargs['pady']) if row < 2 else 0
-
     def on_clear(self):
-        pass
+        for box in self.boxes.values():
+            box.show_pencils()
 
 
 def main():
