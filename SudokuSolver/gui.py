@@ -8,7 +8,7 @@ class MainFrame(Frame):
         Styles.setup()
         self._init_ui()
         self.foo = True
-    
+
     def _init_ui(self):
         self.master.title("Sudoku Solver")
         self.pack(fill='both', expand=True)
@@ -34,9 +34,13 @@ class MainFrame(Frame):
         status_bar.pack(fill='x', padx=5, pady=5)
 
     def on_clear(self):
-        for box in BoxFrame.all.values():
-            box.set_given(self.foo)
+        color = 'red' if self.foo else None
         self.foo = not self.foo
+
+        BoxFrame.all[(0, 3)].set_borders(color, 'nwe')
+        for x in range(1, 8):
+            BoxFrame.all[(x, 3)].set_borders(color, 'we')
+        BoxFrame.all[(8, 3)].set_borders(color, 'swe')
 
 
 def main():

@@ -44,7 +44,7 @@ def _build_grids(parent_frame, parent_position, types_list):
 
 
 class SubGridFrame(Frame):
-    _padding = 3
+    _padding = 4
 
     def __init__(self, master):
         Frame.__init__(self, master, style=Styles.grid_frame)
@@ -69,6 +69,10 @@ class BoxFrame(Frame):
         self.position = (-1, -1)
         self.number_text = StringVar(self, '0')
 
+        self.borders = dict()
+        for e in 'nesw':
+            self.borders[e] = BorderFrame(self, e)
+
         self.content_frame = Frame(self, width=30, height=30, style=Styles.box_frame)
         self.content_frame.pencil_marks = [None] * 9
         self.number = Label(self.content_frame, textvariable=self.number_text, style=Styles.number_label)
@@ -86,7 +90,7 @@ class BoxFrame(Frame):
         pady = (0, BoxFrame._padding) if row < 2 else 0
         self.grid(row=row, column=col, padx=padx, pady=pady, sticky='nesw')
         
-        self.content_frame.pack(padx=2, pady=2, expand=True)
+        self.content_frame.pack(padx=BorderFrame._width, pady=BorderFrame._width, expand=True)
         self.set_pencils(False)
 
     def set_pencils(self, flag):
@@ -104,6 +108,12 @@ class BoxFrame(Frame):
         self.content_frame['style'] = Styles.given_frame if flag else Styles.box_frame
         self.number['style'] = Styles.given_label if flag else Styles.number_label
 
+    def set_borders(self, color, edges='nesw'):
+        for e in self.borders.keys():
+            if e in edges:
+                self.borders[e].set_color(color)
+            else:
+                self.borders[e].set_color(None)
 
 
 class PencilFrame(Frame):
@@ -124,6 +134,23 @@ class PencilFrame(Frame):
 
 
 class BorderFrame(Frame):
-    def __init__(self, master):
-        Frame.__init__(self, master, style=Styles.red)
-        self.place(relwidth=1.0, height=2, x=0, y=0, anchor='nw')
+    _width = 4
+
+    def __init__(self, master, edge):
+        Frame.__init__(self, master)
+        self.edge = edge
+
+    def set_color(self, color):
+        if color is None:
+            self.place_forget()
+            return
+
+        self['style'] = getattr(Styles, color)
+        if self.edge == 'n':
+            self.place(relwidth=1.0, height=BorderFrame._width, x=0, y=0, anchor='nw')
+        elif self.edge == 's':
+            self.place(relwidth=1.0, height=BorderFrame._width, x=0, rely=1.0, anchor='sw')
+        elif self.edge == 'w':
+            self.place(width=BorderFrame._width, relheight=1.0, x=0, y=0, anchor='nw')
+        else: # self.edge == 'e'
+            self.place(width=BorderFrame._width, relheight=1.0, relx=1.0, y=0, anchor='ne')
