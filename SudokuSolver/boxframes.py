@@ -1,8 +1,33 @@
+from enum import Enum
 from tkinter import Tk, Text, StringVar
 from tkinter.ttk import Style, Frame, Label, Button
 
 
-def _build_grids(parent_frame, parent_position, types_list, mainframe):
+class Styles(object):
+    grid_frame = 'grid.TFrame'
+    box_frame = 'box.TFrame'
+    given_frame = 'given.TFrame'
+    number_label = 'number.TLabel'
+    given_label = 'given.TLabel'
+    pencil_label = 'pencil.TLabel'
+    green = 'green.TFrame'
+    red = 'red.TFrame'
+
+    @staticmethod
+    def setup():
+        s = Style()
+        s.theme_use('default')
+        s.configure(Styles.grid_frame, background='#888')
+        s.configure(Styles.box_frame, background='white')
+        s.configure(Styles.given_frame, background='#ddd')
+        s.configure(Styles.number_label, background='white', font='Helvetica 24')
+        s.configure(Styles.given_label, background='#ddd', font='Helvetica 24 bold')
+        s.configure(Styles.pencil_label, background='white', font='Helvetica 8')
+        s.configure(Styles.green, background='green')
+        s.configure(Styles.red, background='red')
+
+
+def _build_grids(parent_frame, parent_position, types_list):
     if len(types_list) <= 0:
         return
     parent_frame.rowconfigure((0, 1, 2), weight=1)
@@ -13,19 +38,19 @@ def _build_grids(parent_frame, parent_position, types_list, mainframe):
             position = (row, col)
 
             subframe = types_list[0](parent_frame)
-            subframe.place_at_position(position, parent_position, mainframe)
+            subframe.place_at_position(position, parent_position)
 
-            _build_grids(subframe, position, types_list[1:], mainframe)
+            _build_grids(subframe, position, types_list[1:])
 
 
 class SubGridFrame(Frame):
     _padding = 3
 
     def __init__(self, master):
-        Frame.__init__(self, master, style='subgrid.TFrame')
+        Frame.__init__(self, master, style=Styles.grid_frame)
         self.position = (-1, -1)
 
-    def place_at_position(self, position, parent_position, mainframe):
+    def place_at_position(self, position, parent_position):
         row = position[0]
         col = position[1]
         self.position = position
@@ -37,57 +62,68 @@ class SubGridFrame(Frame):
 
 class BoxFrame(Frame):
     _padding = 1
+    all = dict()
 
     def __init__(self, master):
-        Frame.__init__(self, master, style='box.TFrame')
+        Frame.__init__(self, master, style=Styles.box_frame)
         self.position = (-1, -1)
         self.number_text = StringVar(self, '0')
 
-        self.contents = Frame(self, width=30, height=30, style='box.TFrame')
-        self.contents.pencil_marks = [None] * 9
-        self.number = Label(self.contents, textvariable=self.number_text, style='number.TLabel')
+        self.content_frame = Frame(self, width=30, height=30, style=Styles.box_frame)
+        self.content_frame.pencil_marks = [None] * 9
+        self.number = Label(self.content_frame, textvariable=self.number_text, style=Styles.number_label)
 
-    def place_at_position(self, position, parent_position, mainframe):
+    def place_at_position(self, position, parent_position):
         row = position[0]
         col = position[1]
         self.position = (parent_position[0] * 3 + row, parent_position[1] * 3 + col)
         self.number_text.set(str(row * 3 + col + 1))
 
-        mainframe.boxes[self.position] = self
-        _build_grids(self.contents, (0, 0), [PencilFrame], mainframe)
+        BoxFrame.all[self.position] = self
+        _build_grids(self.content_frame, (0, 0), [PencilFrame])
 
         padx = (0, BoxFrame._padding) if col < 2 else 0
         pady = (0, BoxFrame._padding) if row < 2 else 0
         self.grid(row=row, column=col, padx=padx, pady=pady, sticky='nesw')
-        self.contents.pack(padx=2, pady=2, expand=True)
-        self.number.place(relx=0.5, rely=0.5, anchor='center')
+        
+        self.content_frame.pack(padx=2, pady=2, expand=True)
+        self.set_pencils(False)
 
-    def show_pencils(self):
-        for widget in self.contents.pack_slaves():
-            widget.pack_forget()
-        for widget in self.contents.pencil_marks:
-            widget.grid(row=widget.position[0], column=widget.position[1], sticky='nesw')
+    def set_pencils(self, flag):
+        if flag:
+            self.number.place_forget()
+            for pencil_mark in self.content_frame.pencil_marks:
+                pencil_mark.grid(row=pencil_mark.position[0], column=pencil_mark.position[1], sticky='nesw')
+        else:
+            for pencil_mark in self.content_frame.pencil_marks:
+                pencil_mark.grid_forget()
+            self.number.place(relx=0.5, rely=0.5, anchor='center')
+
+    def set_given(self, flag):
+        self['style'] = Styles.given_frame if flag else Styles.box_frame
+        self.content_frame['style'] = Styles.given_frame if flag else Styles.box_frame
+        self.number['style'] = Styles.given_label if flag else Styles.number_label
+
 
 
 class PencilFrame(Frame):
     def __init__(self, master):
-        Frame.__init__(self, master, width=10, height=10, style='box.TFrame')
+        Frame.__init__(self, master, width=10, height=10, style=Styles.box_frame)
         self.position = (-1, -1)
 
-    def place_at_position(self, position, parent_position, mainframe):
+    def place_at_position(self, position, parent_position):
         row = position[0]
         col = position[1]
         self.position = position
         frame_index = row * 3 + col
 
         self.master.pencil_marks[frame_index] = self
-        #self.grid(row=row, column=col, sticky='nesw')
 
-        number = Label(self, text=str(frame_index + 1), style='pencil.TLabel')
+        number = Label(self, text=str(frame_index + 1), style=Styles.pencil_label)
         number.place(relx=0.5, rely=0.5, anchor='center')
 
 
 class BorderFrame(Frame):
     def __init__(self, master):
-        Frame.__init__(self, master, style='red.TFrame')
+        Frame.__init__(self, master, style=Styles.red)
         self.place(relwidth=1.0, height=2, x=0, y=0, anchor='nw')
