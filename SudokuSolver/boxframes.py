@@ -12,6 +12,7 @@ class Styles(object):
     pencil_label = 'pencil.TLabel'
     green = 'green.TFrame'
     red = 'red.TFrame'
+    yellow = 'yellow.TFrame'
 
     @staticmethod
     def setup():
@@ -25,6 +26,7 @@ class Styles(object):
         s.configure(Styles.pencil_label, background='white', font='Helvetica 8')
         s.configure(Styles.green, background='green')
         s.configure(Styles.red, background='red')
+        s.configure(Styles.yellow, background='yellow')
 
 
 def _build_grids(parent_frame, parent_position, types_list):
@@ -41,6 +43,10 @@ def _build_grids(parent_frame, parent_position, types_list):
             subframe.place_at_position(position, parent_position)
 
             _build_grids(subframe, position, types_list[1:])
+
+
+def _tag_widget(widget, tag):
+    widget.bindtags((tag,) + widget.bindtags())
 
 
 class SubGridFrame(Frame):
@@ -67,7 +73,7 @@ class BoxFrame(Frame):
     def __init__(self, master):
         Frame.__init__(self, master, style=Styles.box_frame)
         self.position = (-1, -1)
-        self.number_text = StringVar(self, '0')
+        self.number_text = StringVar(self, '')
 
         self.borders = dict()
         for e in 'nesw':
@@ -81,7 +87,12 @@ class BoxFrame(Frame):
         row = position[0]
         col = position[1]
         self.position = (parent_position[0] * 3 + row, parent_position[1] * 3 + col)
-        self.number_text.set(str(row * 3 + col + 1))
+
+        self.binding_tag = 'BoxFrame' + str(self.position)
+        _tag_widget(self, self.binding_tag)
+        self.content_frame.binding_tag = self.binding_tag
+        _tag_widget(self.content_frame, self.binding_tag)
+        _tag_widget(self.number, self.binding_tag)
 
         BoxFrame.all[self.position] = self
         _build_grids(self.content_frame, (0, 0), [PencilFrame])
@@ -128,9 +139,11 @@ class PencilFrame(Frame):
         frame_index = row * 3 + col
 
         self.master.pencil_marks[frame_index] = self
+        _tag_widget(self, self.master.binding_tag)
 
         number = Label(self, text=str(frame_index + 1), style=Styles.pencil_label)
         number.place(relx=0.5, rely=0.5, anchor='center')
+        _tag_widget(number, self.master.binding_tag)
 
 
 class BorderFrame(Frame):
