@@ -3,6 +3,18 @@ from tkinter import Tk, Text, StringVar
 from tkinter.ttk import Style, Widget, Frame, Label, Button
 
 
+def _get_number(text):
+    """Converts text to a number.  Returns 0 if the text is not a valid number.
+
+    Args:
+        text: Text to convert to a number.
+    """
+    try:
+        return int(text)
+    except:
+        return 0
+
+
 def _build_grids(parent_frame, parent_position, frame_type):
     """Builds a 3x3 grid of frames in the given parent frame.
     For each frame created, this function will call `frame.place_at_position`.
@@ -134,7 +146,10 @@ class BoxFrame(Frame):
             self.borders[e] = BorderFrame(self, e)
 
         self.content_frame = Frame(self, width=30, height=30, style=FrameStyles.box_frame)
-        self.content_frame.pencil_marks = [None] * 9
+
+        self.pencil_marks = [None] * 9
+        _build_grids(self.content_frame, (0, 0), PencilFrame)
+
         self.number = Label(self.content_frame, textvariable=self.number_text, style=FrameStyles.number_label)
 
         _tag_widget(self, self.binding_tag)
@@ -153,40 +168,66 @@ class BoxFrame(Frame):
 
         self.position = (parent_position[0] * 3 + row, parent_position[1] * 3 + col)
         self.find_parent(MainFrame).boxes[self.position] = self
-        _build_grids(self.content_frame, (0, 0), PencilFrame)
 
         padx = (0, BoxFrame._padding) if col < 2 else 0
         pady = (0, BoxFrame._padding) if row < 2 else 0
         self.grid(row=row, column=col, padx=padx, pady=pady, sticky='nesw')
 
         self.content_frame.pack(padx=BorderFrame._width, pady=BorderFrame._width, expand=True)
-        self.set_pencils(False)
+        self.set_number('')
 
-    def set_pencils(self, flag):
-        """Sets the box's pencils to showing or not.
-        Hiding the pencils will automatically show the number.
+    def get_number(self):
+        return _get_number(self.number_text.get())
+
+    def set_number(self, value=None):
+        """Sets the box's number to showing.
 
         Args:
-            flag: `True` to show the pencils, `False` to hide them.
+            value: What number to display.  Omitting this argument means keeping the current number.
         """
-        if flag:
-            self.number.place_forget()
-            for pencil_mark in self.content_frame.pencil_marks:
-                pencil_mark.grid(row=pencil_mark.position[0], column=pencil_mark.position[1], sticky='nesw')
-        else:
-            for pencil_mark in self.content_frame.pencil_marks:
-                pencil_mark.grid_forget()
-            self.number.place(relx=0.5, rely=0.5, anchor='center')
+        value = self.number_text.get() if value is None else value
 
-    def set_given(self, flag):
+        for pencil_mark in self.pencil_marks:
+            pencil_mark.grid_forget()
+        self['style'] = FrameStyles.box_frame
+        self.content_frame['style'] = FrameStyles.box_frame
+        self.number['style'] = FrameStyles.number_label
+
+        self.number.place(relx=0.5, rely=0.5, anchor='center')
+        self.number_text.set(str(value or ' ')[0])
+
+    def set_given(self, value=None):
         """Sets the box to use the "given number" style.
 
         Args:
-            flag: `True` to set to the "given number" style, `False` to remove the style.
+            value: What number to display.  Omitting this argument means keeping the current number.
         """
-        self['style'] = FrameStyles.given_frame if flag else FrameStyles.box_frame
-        self.content_frame['style'] = FrameStyles.given_frame if flag else FrameStyles.box_frame
-        self.number['style'] = FrameStyles.given_label if flag else FrameStyles.number_label
+        value = self.number_text.get() if value is None else value
+
+        for pencil_mark in self.pencil_marks:
+            pencil_mark.grid_forget()
+        self['style'] = FrameStyles.given_frame
+        self.content_frame['style'] = FrameStyles.given_frame
+        self.number['style'] = FrameStyles.given_label
+
+        self.number.place(relx=0.5, rely=0.5, anchor='center')
+        self.number_text.set(str(value or ' ')[0])
+
+    def set_pencils(self, values=0b111111111):
+        """Sets the box's pencils to showing.
+
+        Args:
+            values: Which pencil marks to display.
+                Bit0 set means display the '1' pencil mark, bit1 set means display the '2' pencil mark, etc.
+        """
+        self.number.place_forget()
+        self['style'] = FrameStyles.box_frame
+        self.content_frame['style'] = FrameStyles.box_frame
+
+        for i in range(0, 9):
+            pencil_mark = self.pencil_marks[i]
+            pencil_mark.show(values & (1 << i))
+            pencil_mark.grid(row=pencil_mark.position[0], column=pencil_mark.position[1], sticky='nesw')
 
     def set_borders(self, color, edges='nesw'):
         """Sets the borders on this box frame.
@@ -213,6 +254,15 @@ class PencilFrame(Frame):
         """
         Frame.__init__(self, master, width=10, height=10, style=FrameStyles.box_frame)
         self.position = (-1, -1)
+        self.number_value = ' '
+        self.number_text = StringVar(self, ' ')
+
+        number = Label(self, textvariable=self.number_text, style=FrameStyles.pencil_label)
+        number.place(relx=0.5, rely=0.5, anchor='center')
+
+        _tag_widget(self, self.find_parent(BoxFrame).binding_tag)
+        _tag_widget(number, self.find_parent(BoxFrame).binding_tag)
+
 
     def place_at_position(self, position, parent_position):
         """Places the PencilFrame in its parent at the given position.
@@ -225,13 +275,17 @@ class PencilFrame(Frame):
         col = position[1]
         self.position = position
         frame_index = row * 3 + col
+        self.number_value = str(frame_index + 1)
 
-        self.master.pencil_marks[frame_index] = self
-        _tag_widget(self, self.find_parent(BoxFrame).binding_tag)
+        self.find_parent(BoxFrame).pencil_marks[frame_index] = self
 
-        number = Label(self, text=str(frame_index + 1), style=FrameStyles.pencil_label)
-        number.place(relx=0.5, rely=0.5, anchor='center')
-        _tag_widget(number, self.find_parent(BoxFrame).binding_tag)
+    def show(self, flag):
+        """Show or hide the pencil frame, based on the flag.
+
+        Args:
+            flag: `True` to show this pencil mark, `False` to hide it.
+        """
+        self.number_text.set(self.number_value if flag else ' ')
 
 
 class BorderFrame(Frame):
@@ -271,6 +325,7 @@ class BorderFrame(Frame):
 
 class MainFrame(Frame):
     """The most parent frame that makes up the GUI."""
+    _initializing_text = "Click on a square and type in its number, then click 'Start'.";
 
     def __init__(self, master):
         """Construct a MainFrame with parent master.
@@ -282,10 +337,12 @@ class MainFrame(Frame):
         FrameStyles.setup()
 
         self.clear_text = StringVar(self, "Clear")
+        self.step_text = StringVar(self, "Start")
+        self.end_text = StringVar(self, "Solve")
         self.subgrids = dict()
         self.boxes = dict()
-        self.active_box = None
-        self.status_text = StringVar(self, "Waiting...")
+        self.highlighted_box = None
+        self.status_text = StringVar(self, MainFrame._initializing_text)
 
         self._init_ui()
         self._init_events()
@@ -299,8 +356,8 @@ class MainFrame(Frame):
         button_frame.pack(fill='x', padx=5, pady=5)
         clear_button = Button(button_frame, textvariable=self.clear_text, command=self.on_clear)
         clear_button.pack(side='left')
-        step_button = Button(button_frame, text=">")
-        end_button = Button(button_frame, text=">>")
+        step_button = Button(button_frame, textvariable=self.step_text, command=self.on_step)
+        end_button = Button(button_frame, textvariable=self.end_text)
         end_button.pack(side='right')
         step_button.pack(side='right')
 
@@ -323,14 +380,13 @@ class MainFrame(Frame):
         Args:
             e: Tkinter event object.
         """
-        if self.active_box is None:
+        if self.highlighted_box is None:
             return
+
         if e.char in '123456789':
-            self.active_box.number_text.set(e.char)
-            self.active_box.set_given(True)
+            self.highlighted_box.set_given(e.char)
         else:
-            self.active_box.number_text.set('')
-            self.active_box.set_given(False)
+            self.highlighted_box.set_number('')
 
     def on_click(self, e):
         """Called whenever the user clicks on the sudoku board.
@@ -343,22 +399,26 @@ class MainFrame(Frame):
             return
         box_frame.focus()
 
-        if self.active_box is not None:
-            self.active_box.set_borders(None)
-        if self.active_box == box_frame:
-            self.active_box = None
+        if self.highlighted_box is not None:
+            self.highlighted_box.set_borders(None)
+        if self.highlighted_box == box_frame:
+            self.highlighted_box = None
         else:
-            self.active_box = box_frame
-            self.active_box.set_borders('yellow')
+            self.highlighted_box = box_frame
+            self.highlighted_box.set_borders('yellow')
 
     def on_clear(self):
         """Called whenever the user clicks the "Clear" button."""
-        if self.active_box is not None:
-            self.active_box.set_borders(None)
-            self.active_box = None
+        if self.highlighted_box is not None:
+            self.highlighted_box.set_borders(None)
+            self.highlighted_box = None
         for box in self.boxes.values():
-            box.number_text.set('')
-            box.set_given(False)
+            box.set_number('')
+
+    def on_step(self):
+        """Called whenever the user clicks the "Step" button."""
+        import pprint
+        pprint.pprint({k: self.boxes[k].get_number() for k in self.boxes.keys()})
 
 
 def main():
