@@ -325,7 +325,6 @@ class BorderFrame(Frame):
 
 class MainFrame(Frame):
     """The most parent frame that makes up the GUI."""
-    _initializing_text = "Click on a square and type in its number, then click 'Start'.";
 
     def __init__(self, master):
         """Construct a MainFrame with parent master.
@@ -336,16 +335,17 @@ class MainFrame(Frame):
         Frame.__init__(self, master)
         FrameStyles.setup()
 
-        self.clear_text = StringVar(self, "Clear")
-        self.step_text = StringVar(self, "Start")
-        self.end_text = StringVar(self, "Solve")
+        self.clear_text = StringVar(self, "")
+        self.step_text = StringVar(self, "")
+        self.end_text = StringVar(self, "")
         self.subgrids = dict()
         self.boxes = dict()
         self.highlighted_box = None
-        self.status_text = StringVar(self, MainFrame._initializing_text)
+        self.status_text = StringVar(self, "")
 
         self._init_ui()
         self._init_events()
+        self.mode = InitializingMode(self)
 
     def _init_ui(self):
         """Initializes all the UI elements."""
@@ -357,7 +357,7 @@ class MainFrame(Frame):
         clear_button = Button(button_frame, textvariable=self.clear_text, command=self.on_clear)
         clear_button.pack(side='left')
         step_button = Button(button_frame, textvariable=self.step_text, command=self.on_step)
-        end_button = Button(button_frame, textvariable=self.end_text)
+        end_button = Button(button_frame, textvariable=self.end_text, command=self.on_end)
         end_button.pack(side='right')
         step_button.pack(side='right')
 
@@ -375,18 +375,64 @@ class MainFrame(Frame):
             self.bind_class(box.binding_tag, "<Button>", self.on_click)
 
     def on_key(self, e):
+        """Called whenever the user presses a key on their keyboard."""
+        self.mode.on_key(e)
+
+    def on_click(self, e):
+        """Called whenever the user clicks on the sudoku board."""
+        self.mode.on_click(e)
+
+    def on_clear(self):
+        """Called whenever the user clicks the "Clear" button."""
+        self.mode.on_clear()
+
+    def on_step(self):
+        """Called whenever the user clicks the "Step" button."""
+        self.mode.on_step()
+
+    def on_end(self):
+        """Called whenever the user clicks the "End" button."""
+        self.mode.on_end()
+
+
+class InitializingMode(object):
+    """Encapsulates the behavior when MainFrame is in the initializing mode."""
+    _status_text = "Click on a square and type in its number, then click 'Start'."
+    
+    def __init__(self, main):
+        """Construct the initializing mode object.
+
+        Args:
+            main: The MainFrame object that will have this mode.
+        """
+        self.main = main
+        self.main.clear_text.set("Clear")
+        self.main.step_text.set("Start")
+        self.main.end_text.set("Solve")
+        self.main.status_text.set(InitializingMode._status_text)
+
+    def on_key(self, e):
         """Called whenever the user presses a key on their keyboard.
 
         Args:
             e: Tkinter event object.
         """
-        if self.highlighted_box is None:
+        if self.main.highlighted_box is None:
             return
 
-        if e.char in '123456789':
-            self.highlighted_box.set_given(e.char)
+        if len(e.char) > 0 and e.char in '123456789':
+            self.main.highlighted_box.set_given(e.char)
+        elif e.keysym in ['Up','Right','Down','Left']:
+            x_mov = -1 if e.keysym == 'Left' else (1 if e.keysym == 'Right' else 0)
+            y_mov = -1 if e.keysym == 'Up' else (1 if e.keysym == 'Down' else 0)
+            new_pos = (self.main.highlighted_box.position[0] + y_mov,
+                       self.main.highlighted_box.position[1] + x_mov)
+            new_box = self.main.boxes.get(new_pos)
+            if new_box is not None:
+                e.widget = new_box
+                self.on_click(e)
         else:
-            self.highlighted_box.set_number('')
+            self.main.highlighted_box.set_number('')
 
     def on_click(self, e):
         """Called whenever the user clicks on the sudoku board.
@@ -399,26 +445,30 @@ class MainFrame(Frame):
             return
         box_frame.focus()
 
-        if self.highlighted_box is not None:
-            self.highlighted_box.set_borders(None)
-        if self.highlighted_box == box_frame:
-            self.highlighted_box = None
+        if self.main.highlighted_box is not None:
+            self.main.highlighted_box.set_borders(None)
+        if self.main.highlighted_box == box_frame:
+            self.main.highlighted_box = None
         else:
-            self.highlighted_box = box_frame
-            self.highlighted_box.set_borders('yellow')
+            self.main.highlighted_box = box_frame
+            self.main.highlighted_box.set_borders('yellow')
 
     def on_clear(self):
         """Called whenever the user clicks the "Clear" button."""
-        if self.highlighted_box is not None:
-            self.highlighted_box.set_borders(None)
-            self.highlighted_box = None
-        for box in self.boxes.values():
+        if self.main.highlighted_box is not None:
+            self.main.highlighted_box.set_borders(None)
+            self.main.highlighted_box = None
+        for box in self.main.boxes.values():
             box.set_number('')
 
     def on_step(self):
         """Called whenever the user clicks the "Step" button."""
         import pprint
-        pprint.pprint({k: self.boxes[k].get_number() for k in self.boxes.keys()})
+        pprint.pprint({k: self.main.boxes[k].get_number() for k in self.main.boxes.keys()})
+
+    def on_end(self):
+        """Called whenever the user clicks the "End" button."""
+        pass
 
 
 def main():
