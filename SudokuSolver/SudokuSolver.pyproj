@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>2a819d47-cd38-45bf-a9eb-0d242bdd40eb</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>gui.py</StartupFile>
+    <StartupFile>__main__.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -28,9 +28,24 @@
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\3.5" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="gui.py">
+    <Compile Include="gui\events.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="gui\frames.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="gui\styles.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="gui\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="__main__.py">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="gui\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
