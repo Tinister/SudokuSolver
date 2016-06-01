@@ -4,9 +4,9 @@ from tkinter.ttk import Frame, Button, Label
 import gui.styles as styles
 import gui.events as events
 
-_subgrid_padding = 4
-_box_padding = 1
-_border_width = 4
+_SUBGRID_PADDING = 4
+_BOX_PADDING = 1
+_BORDER_WIDTH = 4
 
 def _tag_widget(self, tag):
     """Tags a widget with the given bind tag.  For use in `Widget.bind_class`.
@@ -42,7 +42,7 @@ def _build_3x3_grid(self, frame_type):
     return frames_created
 
 
-class Gui(Frame, events.ModeDeferrer):
+class Gui(Frame, events.ModeDeferrer): # pylint: disable=too-many-ancestors
     """The most parent frame that makes up the GUI."""
 
     def __init__(self):
@@ -53,6 +53,7 @@ class Gui(Frame, events.ModeDeferrer):
         """
         root = Tk()
         Frame.__init__(self, root)
+        events.ModeDeferrer.__init__(self)
         root.title("Sudoku Solver")
         styles.setup(root)
 
@@ -80,7 +81,7 @@ class Gui(Frame, events.ModeDeferrer):
         end_button.pack(side='right')
         step_button.pack(side='right')
 
-        grid_frame = Frame(self, style=styles.grid_frame)
+        grid_frame = Frame(self, style=styles.GRID_FRAME)
         self.subgrids = _build_3x3_grid(grid_frame, SubGrid)
         for subgrid in self.subgrids:
             boxes = _build_3x3_grid(subgrid, Box)
@@ -95,10 +96,11 @@ class Gui(Frame, events.ModeDeferrer):
         """Initializes all the UI events."""
         self.bind_all("<Key>", self.on_key)
         for box in self.boxes.values():
-            self.bind_class(box.binding_tag, "<Button>", lambda e, box=box: self.on_box_click(box, e))
+            self.bind_class(box.binding_tag, "<Button>",
+                            lambda e, box=box: self.on_box_click(box, e))
 
 
-class SubGrid(Frame):
+class SubGrid(Frame): # pylint: disable=too-many-ancestors
     """Represents the larger 3x3 grid inside of the sudoku board."""
 
     def __init__(self, master):
@@ -107,7 +109,7 @@ class SubGrid(Frame):
         Args:
             master: The parent frame.
         """
-        Frame.__init__(self, master, style=styles.grid_frame)
+        Frame.__init__(self, master, style=styles.GRID_FRAME)
         self.position = (0, 0)
 
     def place_at_position(self, position):
@@ -122,12 +124,12 @@ class SubGrid(Frame):
 
         self.position = position
 
-        padx = (_subgrid_padding, 0) if col < 2 else _subgrid_padding
-        pady = (_subgrid_padding, 0) if row < 2 else _subgrid_padding
+        padx = (_SUBGRID_PADDING, 0) if col < 2 else _SUBGRID_PADDING
+        pady = (_SUBGRID_PADDING, 0) if row < 2 else _SUBGRID_PADDING
         self.grid(row=row, column=col, padx=padx, pady=pady, sticky='nesw')
 
 
-class Box(Frame):
+class Box(Frame): # pylint: disable=too-many-ancestors
     """Represents a single box (of 0-9) in the sudoku board."""
     _counter = 0
 
@@ -137,20 +139,20 @@ class Box(Frame):
         Args:
             master: The parent frame.
         """
-        Frame.__init__(self, master, style=styles.box_frame)
+        Frame.__init__(self, master, style=styles.BOX_FRAME)
         self.position = (0, 0)
         self.binding_tag = 'BoxFrame' + str(Box._counter)
         self.number_text = StringVar(self, '')
         Box._counter += 1
 
         self.borders = dict()
-        for e in 'nesw':
-            self.borders[e] = Border(self, e)
+        for edge in 'nesw':
+            self.borders[edge] = Border(self, edge)
 
-        self.inner_frame = Frame(self, width=30, height=30, style=styles.box_frame)
+        self.inner_frame = Frame(self, width=30, height=30, style=styles.BOX_FRAME)
         self.pencil_marks = _build_3x3_grid(self.inner_frame, Pencil)
 
-        self.label = Label(self.inner_frame, textvariable=self.number_text, style=styles.number_label)
+        self.label = Label(self.inner_frame, textvariable=self.number_text, style=styles.NUMBER_LABEL)
 
         _tag_widget(self, self.binding_tag)
         _tag_widget(self.inner_frame, self.binding_tag)
@@ -172,11 +174,11 @@ class Box(Frame):
         parent_position = self.master.position  # master "ought to be" SubGrid
         self.position = (parent_position[0] * 3 + row, parent_position[1] * 3 + col)
 
-        padx = (0, _box_padding) if col < 2 else 0
-        pady = (0, _box_padding) if row < 2 else 0
+        padx = (0, _BOX_PADDING) if col < 2 else 0
+        pady = (0, _BOX_PADDING) if row < 2 else 0
         self.grid(row=row, column=col, padx=padx, pady=pady, sticky='nesw')
 
-        self.inner_frame.pack(padx=_border_width, pady=_border_width, expand=True)
+        self.inner_frame.pack(padx=_BORDER_WIDTH, pady=_BORDER_WIDTH, expand=True)
         self.number = 0
 
     @property
@@ -184,16 +186,16 @@ class Box(Frame):
         """The number the box contains. Setting this value may change the box's style."""
         try:
             return int(self.number_text.get())
-        except:
+        except ValueError:
             return 0
 
     @number.setter
     def number(self, value):
         for pencil_mark in self.pencil_marks:
             pencil_mark.grid_forget()
-        self['style'] = styles.box_frame
-        self.inner_frame['style'] = styles.box_frame
-        self.label['style'] = styles.number_label
+        self['style'] = styles.BOX_FRAME
+        self.inner_frame['style'] = styles.BOX_FRAME
+        self.label['style'] = styles.NUMBER_LABEL
 
         self.label.place(relx=0.5, rely=0.5, anchor='center')
         self.number_text.set(str(value or ' ')[0])
@@ -201,7 +203,7 @@ class Box(Frame):
     @property
     def given(self):
         """The given value for this box. Setting this value may change the box's style."""
-        if self['style'] != styles.given_frame:
+        if self['style'] != styles.GIVEN_FRAME:
             return 0
         else:
             return self.number
@@ -210,9 +212,9 @@ class Box(Frame):
     def given(self, value):
         for pencil_mark in self.pencil_marks:
             pencil_mark.grid_forget()
-        self['style'] = styles.given_frame
-        self.inner_frame['style'] = styles.given_frame
-        self.label['style'] = styles.given_label
+        self['style'] = styles.GIVEN_FRAME
+        self.inner_frame['style'] = styles.GIVEN_FRAME
+        self.label['style'] = styles.GIVEN_LABEL
 
         self.label.place(relx=0.5, rely=0.5, anchor='center')
         self.number_text.set(str(value or ' ')[0])
@@ -225,8 +227,8 @@ class Box(Frame):
                 Bit0 set means display the '1' pencil mark, bit1 set means display the '2' pencil mark, etc.
         """
         self.label.place_forget()
-        self['style'] = styles.box_frame
-        self.inner_frame['style'] = styles.box_frame
+        self['style'] = styles.BOX_FRAME
+        self.inner_frame['style'] = styles.BOX_FRAME
 
         for i in range(0, 9):
             pencil_mark = self.pencil_marks[i]
@@ -240,14 +242,14 @@ class Box(Frame):
             color: Color of borders to set, or `None` to hide the borders.
             edges: A subset of 'nesw' for which borders to show.
         """
-        for e in self.borders.keys():
-            if e in edges:
-                self.borders[e].set_color(color)
+        for edge in self.borders.keys():
+            if edge in edges:
+                self.borders[edge].set_color(color)
             else:
-                self.borders[e].set_color(None)
+                self.borders[edge].set_color(None)
 
 
-class Pencil(Frame):
+class Pencil(Frame): # pylint: disable=too-many-ancestors
     """A smaller box (of 0-9) representing the pencil marks in a normal box."""
 
     def __init__(self, master):
@@ -256,12 +258,12 @@ class Pencil(Frame):
         Args:
             master: The parent frame.
         """
-        Frame.__init__(self, master, width=10, height=10, style=styles.box_frame)
+        Frame.__init__(self, master, width=10, height=10, style=styles.BOX_FRAME)
         self.position = (0, 0)
         self.number_value = ' '
         self.number_text = StringVar(self, ' ')
 
-        self.label = Label(self, textvariable=self.number_text, style=styles.pencil_label)
+        self.label = Label(self, textvariable=self.number_text, style=styles.PENCIL_LABEL)
         self.label.place(relx=0.5, rely=0.5, anchor='center')
 
     def place_at_position(self, position):
@@ -285,7 +287,7 @@ class Pencil(Frame):
         self.number_text.set(self.number_value if flag else ' ')
 
 
-class Border(Frame):
+class Border(Frame): # pylint: disable=too-many-ancestors
     """The frame element that makes up a border in a box."""
 
     def __init__(self, master, edge):
@@ -308,12 +310,12 @@ class Border(Frame):
             self.place_forget()
             return
 
-        self['style'] = getattr(styles, color)
+        self['style'] = getattr(styles, color.upper())
         if self.edge == 'n':
-            self.place(relwidth=1.0, height=_border_width, x=0, y=0, anchor='nw')
+            self.place(relwidth=1.0, height=_BORDER_WIDTH, x=0, y=0, anchor='nw')
         elif self.edge == 's':
-            self.place(relwidth=1.0, height=_border_width, x=0, rely=1.0, anchor='sw')
+            self.place(relwidth=1.0, height=_BORDER_WIDTH, x=0, rely=1.0, anchor='sw')
         elif self.edge == 'w':
-            self.place(width=_border_width, relheight=1.0, x=0, y=0, anchor='nw')
+            self.place(width=_BORDER_WIDTH, relheight=1.0, x=0, y=0, anchor='nw')
         else:  # self.edge == 'e'
-            self.place(width=_border_width, relheight=1.0, relx=1.0, y=0, anchor='ne')
+            self.place(width=_BORDER_WIDTH, relheight=1.0, relx=1.0, y=0, anchor='ne')

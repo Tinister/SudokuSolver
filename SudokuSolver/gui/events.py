@@ -5,12 +5,12 @@ class _Handler(metaclass=abc.ABCMeta):
     """Handles all of the events the top frame can generate."""
 
     @abc.abstractmethod
-    def on_key(self, e):
+    def on_key(self, evt):
         """Called whenever the user presses a key on their keyboard."""
         pass
 
     @abc.abstractmethod
-    def on_box_click(self, box, e):
+    def on_box_click(self, box, evt):
         """Called whenever the user clicks a box on the sudoku board."""
         pass
 
@@ -32,12 +32,15 @@ class _Handler(metaclass=abc.ABCMeta):
 
 class ModeDeferrer(_Handler):
     """Defers all event handling to a mode attribute."""
-    
-    def on_key(self, e):
-        self.mode.on_key(e)
 
-    def on_box_click(self, box, e):
-        self.mode.on_box_click(box, e)
+    def __init__(self):
+        self.mode = None
+
+    def on_key(self, evt):
+        self.mode.on_key(evt)
+
+    def on_box_click(self, box, evt):
+        self.mode.on_box_click(box, evt)
 
     def on_clear(self):
         self.mode.on_clear()
@@ -52,7 +55,7 @@ class ModeDeferrer(_Handler):
 class InitializingMode(_Handler):
     """Encapsulates the behavior when the top frame is in the initializing mode."""
     _status_text = "Click on a square and type in its number, then click 'Start'."
-    
+
     def __init__(self, top_frame):
         """Construct the initializing mode object.
 
@@ -65,34 +68,34 @@ class InitializingMode(_Handler):
         self.frame.end_text.set("Solve")
         self.frame.status_text.set(InitializingMode._status_text)
 
-    def on_key(self, e):
+    def on_key(self, evt):
         """Called whenever the user presses a key on their keyboard.
 
         Args:
-            e: Tkinter event object.
+            evt: Tkinter event object.
         """
         if self.frame.highlighted_box is None:
             return
 
-        if len(e.char) > 0 and e.char in '123456789':
-            self.frame.highlighted_box.given = e.char
-        elif e.keysym in ['Up','Right','Down','Left']:
-            x_mov = -1 if e.keysym == 'Left' else (1 if e.keysym == 'Right' else 0)
-            y_mov = -1 if e.keysym == 'Up' else (1 if e.keysym == 'Down' else 0)
+        if len(evt.char) > 0 and evt.char in '123456789':
+            self.frame.highlighted_box.given = evt.char
+        elif evt.keysym in ['Up', 'Right', 'Down', 'Left']:
+            x_mov = -1 if evt.keysym == 'Left' else (1 if evt.keysym == 'Right' else 0)
+            y_mov = -1 if evt.keysym == 'Up' else (1 if evt.keysym == 'Down' else 0)
             new_pos = (self.frame.highlighted_box.position[0] + y_mov,
                        self.frame.highlighted_box.position[1] + x_mov)
             new_box = self.frame.boxes.get(new_pos)
             if new_box is not None:
-                self.on_box_click(new_box, e)
+                self.on_box_click(new_box, evt)
         else:
             self.frame.highlighted_box.number = 0
 
-    def on_box_click(self, box, e):
+    def on_box_click(self, box, evt):
         """Called whenever the user clicks a box on the sudoku board.
 
         Args:
             box: Box frame where the event originated.
-            e: Tkinter event object.
+            evt: Tkinter event object.
         """
         box.focus()
 

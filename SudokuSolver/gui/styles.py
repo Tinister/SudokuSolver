@@ -1,30 +1,30 @@
 """Module that groups all the custom styles defined."""
 from tkinter.ttk import Style
 
-grid_frame = 'grid.TFrame'
-box_frame = 'box.TFrame'
-given_frame = 'given.TFrame'
-number_label = 'number.TLabel'
-given_label = 'given.TLabel'
-pencil_label = 'pencil.TLabel'
-green = 'green.TFrame'
-red = 'red.TFrame'
-yellow = 'yellow.TFrame'
+GRID_FRAME = 'grid.TFrame'
+BOX_FRAME = 'box.TFrame'
+GIVEN_FRAME = 'given.TFrame'
+NUMBER_LABEL = 'number.TLabel'
+GIVEN_LABEL = 'given.TLabel'
+PENCIL_LABEL = 'pencil.TLabel'
+GREEN = 'green.TFrame'
+RED = 'red.TFrame'
+YELLOW = 'yellow.TFrame'
 
-def setup(tk):
+def setup(tk_instance):
     """Sets up all the custom styles.
-    
+
     Args:
         Toplevel Tk instance.
     """
-    s = Style(tk)
-    s.theme_use('default')
-    s.configure(grid_frame, background='#888')
-    s.configure(box_frame, background='white')
-    s.configure(given_frame, background='#ddd')
-    s.configure(number_label, background='white', font='Helvetica 24')
-    s.configure(given_label, background='#ddd', font='Helvetica 24 bold')
-    s.configure(pencil_label, background='white', font='Helvetica 8')
-    s.configure(green, background='green')
-    s.configure(red, background='red')
-    s.configure(yellow, background='yellow')
+    style = Style(tk_instance)
+    style.theme_use('default')
+    style.configure(GRID_FRAME, background='#888')
+    style.configure(BOX_FRAME, background='white')
+    style.configure(GIVEN_FRAME, background='#ddd')
+    style.configure(NUMBER_LABEL, background='white', font='Helvetica 24')
+    style.configure(GIVEN_LABEL, background='#ddd', font='Helvetica 24 bold')
+    style.configure(PENCIL_LABEL, background='white', font='Helvetica 8')
+    style.configure(GREEN, background='green')
+    style.configure(RED, background='red')
+    style.configure(YELLOW, background='yellow')
